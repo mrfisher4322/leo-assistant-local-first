@@ -1,0 +1,30 @@
+name: Windows (Tauri MSI)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc,aarch64-pc-windows-msvc
+      - run: corepack enable
+      - run: pnpm i --frozen-lockfile
+      - name: Build Desktop App
+        run: |
+          cd apps/desktop
+          cargo tauri build --target x86_64-pc-windows-msvc
+          cargo tauri build --target aarch64-pc-windows-msvc
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: |
+            apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/**
+            apps/desktop/src-tauri/target/aarch64-pc-windows-msvc/release/bundle/msi/**
