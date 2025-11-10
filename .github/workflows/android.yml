@@ -1,0 +1,41 @@
+name: Android (Capacitor APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: 'gradle'
+      - run: corepack enable
+      - run: pnpm i --frozen-lockfile
+      - name: Build web for mobile
+        run: |
+          cd apps/web
+          npm run build
+      - name: Capacitor sync
+        run: |
+          cd apps/mobile
+          npx cap sync android
+      - name: Build APKs
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          ./gradlew assembleRelease
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: |
+            apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
